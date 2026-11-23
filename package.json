@@ -1,0 +1,23 @@
+{
+  "name": "zed-knip",
+  "version": "0.0.1",
+  "private": true,
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.21.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.21.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --import ./test/language-server-stub.js --test test/*.test.js",
+    "changeset": "changeset",
+    "version-packages": "changeset version && node scripts/sync-version.mjs"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3"
+  }
+}

@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: &paths
+      - 'src/**'
+      - 'test/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'build.rs'
+      - 'extension.toml'
+      - '.github/workflows/ci.yml'
+  push:
+    branches:
+      - '**'
+    paths: *paths
+
+# Automatically cancel in-progress actions on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test-js:
+    name: Node v24 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Test language server wrapper
+        run: node --test
+
+  format-rust:
+    name: Format Rust
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
+        with:
+          components: rustfmt
+          cache-base: dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run rustfmt
+        run: cargo fmt --all --verbose -- --check
+
+  lint-and-build-wasm:
+    name: Lint & Build WASM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
+        with:
+          components: clippy
+          targets: wasm32-wasip2
+          cache-base: dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run clippy
+        run: cargo clippy --target wasm32-wasip2 --all-targets -- -D warnings
+
+      - name: Build WASM extension
+        run: cargo build --release --locked --target wasm32-wasip2

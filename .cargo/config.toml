@@ -1,0 +1,5 @@
+[build]
+target = "wasm32-wasip2"
+
+[alias]
+lint = "clippy --target wasm32-wasip2 --all-targets -- -D warnings"

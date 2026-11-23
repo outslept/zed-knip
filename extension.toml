@@ -1,0 +1,26 @@
+id = "knip"
+name = "Knip"
+description = "Community Knip extension for Zed - find unused files, dependencies and exports in your JavaScript and TypeScript projects"
+version = "0.0.1"
+schema_version = 1
+authors = ["outslept"]
+repository = "https://github.com/outslept/zed-knip"
+
+[language_servers.knip]
+name = "Knip Language Server"
+languages = [
+  "JavaScript",
+  "JSX",
+  "TypeScript",
+  "TSX",
+  "Vue.js",
+  "Svelte",
+  "Astro",
+  "MDX",
+  "JSON",
+  "JSONC",
+  "CSS"
+]
+
+[context_servers.knip]
+name = "Knip MCP"
