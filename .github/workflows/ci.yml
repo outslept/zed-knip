@@ -49,7 +49,7 @@ jobs:
           node-version: 24
 
       - name: Test language server wrapper
-        run: node --test
+        run: node --import ./test/language-server-stub.js --test test/*.test.js
 
   format-rust:
     name: Format Rust
