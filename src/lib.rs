@@ -1,7 +1,9 @@
-use std::{env, fs};
+use std::env;
+use std::fs;
+use zed_extension_api::serde_json;
+use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{
-    self as zed, ContextServerId, LanguageServerId, Project, Result, Worktree, serde_json,
-    settings::LspSettings,
+    self as zed, ContextServerId, LanguageServerId, Project, Result, Worktree,
 };
 
 const PACKAGE_NAME: &str = "@knip/language-server";
@@ -13,42 +15,34 @@ const WRAPPER_PATH: &str = "wrapper.mjs";
 // Embed the custom LSP wrapper into the WASM binary at compile time
 const WRAPPER_CONTENT: &str = include_str!("wrapper.mjs");
 
+fn file_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok_and(|stat| stat.is_file())
+}
+
+// Resolve a relative path inside Zed's extension work directory to a host path for Node.js
+fn abs_path(rel_path: &str) -> Result<String> {
+    let dir = env::current_dir().map_err(|e| format!("failed to get current directory: {e}"))?;
+    let path = dir.join(rel_path);
+    let path_str = path.to_string_lossy();
+
+    // Strip leading slash from WASI paths on Windows (e.g. "/C:/..." -> "C:/...")
+    if zed::current_platform().0 == zed::Os::Windows {
+        Ok(path_str.trim_start_matches('/').to_string())
+    } else {
+        Ok(path_str.into_owned())
+    }
+}
+
+#[derive(Default)]
 struct KnipExtension {
     did_find_server: bool,
     did_find_mcp: bool,
 }
 
 impl KnipExtension {
-    fn server_exists(&self) -> bool {
-        fs::metadata(SERVER_PATH).is_ok_and(|stat| stat.is_file())
-    }
-
-    fn mcp_exists(&self) -> bool {
-        fs::metadata(MCP_SERVER_PATH).is_ok_and(|stat| stat.is_file())
-    }
-
-    // Strip leading slash from WASI paths on Windows (e.g. "/C:/..." -> "C:/...")
-    fn normalize_windows_path(path: String) -> String {
-        if zed::current_platform().0 == zed::Os::Windows && path.starts_with('/') {
-            path.trim_start_matches('/').to_string()
-        } else {
-            path
-        }
-    }
-
-    // Resolve a relative path inside Zed's extension work directory to a host path for Node.js
-    fn abs_path(rel_path: &str) -> String {
-        let path = env::current_dir()
-            .unwrap()
-            .join(rel_path)
-            .to_string_lossy()
-            .to_string();
-        Self::normalize_windows_path(path)
-    }
-
     // Install or update @knip/language-server and write the embedded wrapper script
     fn server_script_path(&mut self, language_server_id: &LanguageServerId) -> Result<String> {
-        let server_exists = self.server_exists();
+        let server_exists = file_exists(SERVER_PATH);
         if !self.did_find_server || !server_exists {
             zed::set_language_server_installation_status(
                 language_server_id,
@@ -66,22 +60,24 @@ impl KnipExtension {
                 );
                 // Fall back to existing installation if npm install fails (e.g. offline)
                 match zed::npm_install_package(PACKAGE_NAME, &version) {
-                    Err(error) if !self.server_exists() => return Err(error),
+                    Err(error) if !file_exists(SERVER_PATH) => return Err(error),
                     _ => {}
                 }
             }
             self.did_find_server = true;
         }
 
-        fs::write(WRAPPER_PATH, WRAPPER_CONTENT)
-            .map_err(|e| format!("Failed to write wrapper.mjs: {e}"))?;
+        if fs::read_to_string(WRAPPER_PATH).ok().as_deref() != Some(WRAPPER_CONTENT) {
+            fs::write(WRAPPER_PATH, WRAPPER_CONTENT)
+                .map_err(|e| format!("failed to write {WRAPPER_PATH}: {e}"))?;
+        }
 
-        Ok(Self::abs_path(WRAPPER_PATH))
+        abs_path(WRAPPER_PATH)
     }
 
     // Install or update @knip/mcp for Zed's AI agent context server
     fn mcp_script_path(&mut self) -> Result<String> {
-        let mcp_exists = self.mcp_exists();
+        let mcp_exists = file_exists(MCP_SERVER_PATH);
         if !self.did_find_mcp || !mcp_exists {
             let version = zed::npm_package_latest_version(MCP_PACKAGE_NAME)?;
 
@@ -89,23 +85,20 @@ impl KnipExtension {
                 || zed::npm_package_installed_version(MCP_PACKAGE_NAME)?.as_ref() != Some(&version)
             {
                 match zed::npm_install_package(MCP_PACKAGE_NAME, &version) {
-                    Err(error) if !self.mcp_exists() => return Err(error),
+                    Err(error) if !file_exists(MCP_SERVER_PATH) => return Err(error),
                     _ => {}
                 }
             }
             self.did_find_mcp = true;
         }
 
-        Ok(Self::abs_path(MCP_SERVER_PATH))
+        abs_path(MCP_SERVER_PATH)
     }
 }
 
 impl zed::Extension for KnipExtension {
     fn new() -> Self {
-        Self {
-            did_find_server: false,
-            did_find_mcp: false,
-        }
+        Self::default()
     }
 
     fn language_server_command(
@@ -114,11 +107,10 @@ impl zed::Extension for KnipExtension {
         _worktree: &Worktree,
     ) -> Result<zed::Command> {
         let wrapper_path = self.server_script_path(language_server_id)?;
-
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![wrapper_path, "--stdio".to_string()],
-            env: Default::default(),
+            env: Vec::new(),
         })
     }
 
@@ -153,11 +145,10 @@ impl zed::Extension for KnipExtension {
         _project: &Project,
     ) -> Result<zed::Command> {
         let mcp_path = self.mcp_script_path()?;
-
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![mcp_path],
-            env: Default::default(),
+            env: Vec::new(),
         })
     }
 }
