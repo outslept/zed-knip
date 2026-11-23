@@ -11,6 +11,6 @@ if (existsSync('Cargo.lock')) {
   const lock = readFileSync('Cargo.lock', 'utf8');
   writeFileSync(
     'Cargo.lock',
-    lock.replace(/(name = "zed_knip"\r?\nversion = ")[^"]+(")/, `$1${version}$2`)
+    lock.replace(/(name = "zed[-_]knip"\r?\nversion = ")[^"]+(")/, `$1${version}$2`)
   );
 }
