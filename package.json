@@ -14,7 +14,7 @@
   "scripts": {
     "test": "node --import ./test/language-server-stub.js --test test/*.test.js",
     "changeset": "changeset",
-    "version-packages": "changeset version && node scripts/sync-version.mjs"
+    "version-packages": "changeset version && node scripts/sync-versions.mjs"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.1",
