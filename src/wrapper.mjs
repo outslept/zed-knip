@@ -4,21 +4,19 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
-import { LanguageServer } from './node_modules/@knip/language-server/src/server.js';
 
 const execAsync = promisify(exec);
 
-const serverModuleUrl = new URL('./node_modules/@knip/language-server/src/server.js', import.meta.url);
-const requireFromServer = existsSync(serverModuleUrl) ? createRequire(serverModuleUrl) : null;
+const serverModuleUrl = new URL('./server.js', import.meta.resolve('@knip/language-server'));
+const { LanguageServer } = await import(serverModuleUrl);
+const requireFromServer = createRequire(serverModuleUrl);
 
-const { DidChangeWatchedFilesNotification } = requireFromServer
-  ? requireFromServer('vscode-languageserver/node')
-  : await import('vscode-languageserver/node');
-const { TextDocument } = requireFromServer
-  ? requireFromServer('vscode-languageserver-textdocument')
-  : await import('vscode-languageserver-textdocument');
+const { SESSION_LOADING } = await import(new URL('./constants.js', serverModuleUrl));
+const { KNIP_CONFIG_LOCATIONS } = await import(pathToFileURL(requireFromServer.resolve('knip/session')));
 
-const SESSION_LOADING = 'session-loading';
+const { DidChangeWatchedFilesNotification } = requireFromServer('vscode-languageserver/node');
+const { TextDocument } = requireFromServer('vscode-languageserver-textdocument');
+
 const MAX_TOTAL_DEP_SNIPPETS = 30;
 const MAX_DEP_SNIPPETS_PER_FILE = 3;
 const END_OF_LINE_COL = 10000;
@@ -32,21 +30,6 @@ const DEP_SECTION_RES = [
   /"peerDependencies"\s*:\s*\{/g,
   /"optionalDependencies"\s*:\s*\{/g,
 ];
-const KNIP_CONFIG_FILES = [
-  'knip.json',
-  'knip.jsonc',
-  '.knip.json',
-  '.knip.jsonc',
-  'knip.ts',
-  'knip.js',
-  'knip.mjs',
-  'knip.cjs',
-  'knip.config.ts',
-  'knip.config.js',
-  'knip.config.mjs',
-  'knip.config.cjs',
-];
-
 const collator = new Intl.Collator();
 
 const DEFAULT_CONFIG = {
@@ -413,7 +396,14 @@ export class ZedKnipServer extends LanguageServer {
 
     return diagnostics.filter(diag => {
       const code = String(diag.code ?? '');
-      if (code !== 'exports' && code !== 'types' && code !== 'nsExports' && code !== 'nsTypes') {
+      if (
+        code !== 'exports' &&
+        code !== 'types' &&
+        code !== 'nsExports' &&
+        code !== 'nsTypes' &&
+        code !== 'enumMembers' &&
+        code !== 'namespaceMembers'
+      ) {
         return true;
       }
       const colonIdx = diag.message ? diag.message.lastIndexOf(':') : -1;
@@ -471,8 +461,8 @@ export class ZedKnipServer extends LanguageServer {
 
   /** @param {string} cwd */
   hasKnipConfig(cwd) {
-    for (let i = 0; i < KNIP_CONFIG_FILES.length; i++) {
-      if (existsSync(path.join(cwd, KNIP_CONFIG_FILES[i]))) return true;
+    for (let i = 0; i < KNIP_CONFIG_LOCATIONS.length; i++) {
+      if (existsSync(path.join(cwd, KNIP_CONFIG_LOCATIONS[i]))) return true;
     }
     try {
       const pkg = JSON.parse(readFileSync(path.join(cwd, 'package.json'), 'utf8'));
@@ -481,22 +471,17 @@ export class ZedKnipServer extends LanguageServer {
     return false;
   }
 
-  async startSession() {
-    // Skip session startup when opened in a folder without package.json (e.g. Zed settings directory)
+  async start() {
+    if (this.session) return;
     if (this.cwd && !existsSync(path.join(this.cwd, 'package.json'))) return;
     const config = await this.getConfig();
     if (config.enabled === false) return;
     if (config.requireConfig && this.cwd && !this.hasKnipConfig(this.cwd)) return;
-    return super.startSession();
+    return super.start();
   }
 
-  async restart() {
-    this.cachedConfig = null;
-    return super.restart();
-  }
-
-  publishAllDiagnostics() {
-    super.publishAllDiagnostics();
+  publishDiagnostics(newDiags) {
+    super.publishDiagnostics(newDiags);
     this.connection.sendRequest('workspace/inlayHint/refresh').catch(() => {});
   }
 
@@ -515,7 +500,6 @@ export class ZedKnipServer extends LanguageServer {
   }
 
   async getConfig() {
-    if (this.cachedConfig) return this.cachedConfig;
     let userConfig = this.initConfig ?? {};
     try {
       const workspaceConfig = await this.connection.workspace.getConfiguration('knip');
@@ -579,7 +563,6 @@ export class ZedKnipServer extends LanguageServer {
 
   /** @param {import('vscode-languageserver/node').HoverParams} params */
   async handleHover(params) {
-    if (this.initializing) await this.initializing;
     if (!this.session) return null;
     const uri = params.textDocument.uri;
     if (!uri.startsWith('file:')) return null;
@@ -1113,7 +1096,6 @@ export class ZedKnipServer extends LanguageServer {
 
   /** @param {import('vscode-languageserver/node').InlayHintParams} params */
   async handleInlayHints(params) {
-    if (this.initializing) await this.initializing;
     if (!this.session) return null;
     const config = await this.getConfig();
 
