@@ -1,0 +1,22 @@
+name: Release reminder
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  comment:
+    name: Comment on merged release PR
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'changeset-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post reminder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr comment "$PR_NUMBER" --body "Release PR merged. The release workflow is creating the GitHub Release and tag now; it may take a few minutes. Don't forget to update the submodule and \`extensions.toml\` version in \`zed-industries/extensions\` so this version reaches the Zed extension registry."
