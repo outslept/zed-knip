@@ -15,6 +15,10 @@
     "test": "node --test src/*.test.js test/*.test.js",
     "test:unit": "node --test src/*.test.js",
     "test:e2e": "node --test test/*.test.js",
+    "build": "cargo build --release --locked --target wasm32-wasip2",
+    "lint": "cargo lint",
+    "fmt": "cargo fmt --all",
+    "fmt:check": "cargo fmt --all -- --check",
     "changeset": "changeset",
     "version-packages": "changeset version && node scripts/sync-versions.mjs"
   },
