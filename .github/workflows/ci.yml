@@ -10,6 +10,8 @@ on:
       - 'Cargo.lock'
       - 'build.rs'
       - 'extension.toml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/ci.yml'
   push:
     branches:
@@ -48,8 +50,14 @@ jobs:
         with:
           node-version: 24
 
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Test language server wrapper
-        run: node --import ./test/language-server-stub.js --test test/*.test.js
+        run: pnpm test
 
   format-rust:
     name: Format Rust

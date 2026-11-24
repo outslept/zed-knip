@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
-import descriptors from './fixtures/contention-descriptors.js';
-import './language-server-stub.js';
-
-const { createContentionDescriptors, formatContentionSummary } = await import('../src/wrapper.mjs');
+import descriptors from './contention.fixture.js';
+import { createContentionDescriptors, formatContentionSummary } from './wrapper.mjs';
 
 const ROOT = '/workspace';
 
