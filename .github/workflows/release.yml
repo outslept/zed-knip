@@ -115,7 +115,7 @@ jobs:
 
       - name: Build WASM extension
         run: |
-          cargo build --release --locked --target wasm32-wasip2
+          pnpm build
           cp target/wasm32-wasip2/release/zed_knip.wasm extension.wasm
 
       - name: Extract release notes from CHANGELOG.md
