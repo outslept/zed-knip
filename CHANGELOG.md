@@ -1,5 +1,13 @@
 # zed-knip
 
+## 0.1.1
+
+### Patch Changes
+
+- [`1703ab7`](https://github.com/outslept/zed-knip/commit/1703ab76e5bd776e663803221503a15ab1c85750) Thanks [@outslept](https://github.com/outslept)! - Fix the language server lifecycle hooks: `enabled` and `requireConfig` are now respected at startup, and editor settings are re-read instead of cached for the whole session.
+  
+  Inlay hints refresh after every module graph rebuild, and quick-fix diagnostics for unused enum and namespace members clear immediately.
+
 ## 0.1.0
 
 ### Minor Changes
