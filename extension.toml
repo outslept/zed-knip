@@ -1,7 +1,7 @@
 id = "knip"
 name = "Knip"
 description = "Community Knip extension for Zed - find unused files, dependencies and exports in your JavaScript and TypeScript projects"
-version = "0.1.0"
+version = "0.1.1"
 schema_version = 1
 authors = ["outslept"]
 repository = "https://github.com/outslept/zed-knip"
