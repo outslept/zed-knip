@@ -13,6 +13,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test src/*.test.js test/*.test.js",
+    "test:unit": "node --test src/*.test.js",
+    "test:e2e": "node --test test/*.test.js",
     "changeset": "changeset",
     "version-packages": "changeset version && node scripts/sync-versions.mjs"
   },
