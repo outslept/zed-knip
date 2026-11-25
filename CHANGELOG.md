@@ -1,5 +1,15 @@
 # zed-knip
 
+## 0.2.0
+
+### Minor Changes
+
+- [`49b77b9`](https://github.com/outslept/zed-knip/commit/49b77b987be1ae707a4761b387686b4c346f1994) Thanks [@outslept](https://github.com/outslept)! - Rename the extension ID to `knip-lsp` and remove the MCP context server from the extension manifest.
+  
+  Dependency installation no longer runs a package manager from the language server. The unlisted-dependency quick fix now shows the install command to run in the project workspace.
+  
+  Disable oxc raw transfer by default to avoid `RangeError: Array buffer allocation failed` on Windows and low-memory machines.
+
 ## 0.1.1
 
 ### Patch Changes
