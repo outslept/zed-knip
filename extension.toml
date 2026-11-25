@@ -21,6 +21,3 @@ languages = [
   "JSONC",
   "CSS"
 ]
-
-[context_servers.knip]
-name = "Knip MCP"

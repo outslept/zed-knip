@@ -2,14 +2,10 @@ use std::env;
 use std::fs;
 use zed_extension_api::serde_json;
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{
-    self as zed, ContextServerId, LanguageServerId, Project, Result, Worktree,
-};
+use zed_extension_api::{self as zed, LanguageServerId, Result, Worktree};
 
 const PACKAGE_NAME: &str = "@knip/language-server";
-const MCP_PACKAGE_NAME: &str = "@knip/mcp";
 const SERVER_PATH: &str = "node_modules/@knip/language-server/src/cli.js";
-const MCP_SERVER_PATH: &str = "node_modules/@knip/mcp/src/cli.js";
 const WRAPPER_PATH: &str = "wrapper.mjs";
 
 // Embed the custom LSP wrapper into the WASM binary at compile time
@@ -36,7 +32,6 @@ fn abs_path(rel_path: &str) -> Result<String> {
 #[derive(Default)]
 struct KnipExtension {
     did_find_server: bool,
-    did_find_mcp: bool,
 }
 
 impl KnipExtension {
@@ -73,26 +68,6 @@ impl KnipExtension {
         }
 
         abs_path(WRAPPER_PATH)
-    }
-
-    // Install or update @knip/mcp for Zed's AI agent context server
-    fn mcp_script_path(&mut self) -> Result<String> {
-        let mcp_exists = file_exists(MCP_SERVER_PATH);
-        if !self.did_find_mcp || !mcp_exists {
-            let version = zed::npm_package_latest_version(MCP_PACKAGE_NAME)?;
-
-            if !mcp_exists
-                || zed::npm_package_installed_version(MCP_PACKAGE_NAME)?.as_ref() != Some(&version)
-            {
-                match zed::npm_install_package(MCP_PACKAGE_NAME, &version) {
-                    Err(error) if !file_exists(MCP_SERVER_PATH) => return Err(error),
-                    _ => {}
-                }
-            }
-            self.did_find_mcp = true;
-        }
-
-        abs_path(MCP_SERVER_PATH)
     }
 }
 
@@ -137,19 +112,6 @@ impl zed::Extension for KnipExtension {
             .and_then(|s| s.settings)
             .unwrap_or_else(|| serde_json::json!({}));
         Ok(Some(settings))
-    }
-
-    fn context_server_command(
-        &mut self,
-        _context_server_id: &ContextServerId,
-        _project: &Project,
-    ) -> Result<zed::Command> {
-        let mcp_path = self.mcp_script_path()?;
-        Ok(zed::Command {
-            command: zed::node_binary_path()?,
-            args: vec![mcp_path],
-            env: Vec::new(),
-        })
     }
 }
 

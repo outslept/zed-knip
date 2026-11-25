@@ -37,17 +37,6 @@ check.
 - Code actions to fix or ignore issues (including installing unlisted dependencies)
 - Inlay hints showing import counts (`↻ N imports`) for exports
 
-## MCP Tools
-
-The extension provides a Zed Context Server (`@knip/mcp`) with MCP tools for coding agents:
-
-- `knip-configure` — Run Knip and configure
-- `knip-docs` — Get Knip documentation by topic
-
-In other words, you can tell your coding agent to "configure knip" and it will
-RTFM so you don't have to. Using a newer model results in an optimized
-`knip.json` file and an uncluttered codebase.
-
 ## Screenshots & Contention
 
 - [Lint Findings][6]
