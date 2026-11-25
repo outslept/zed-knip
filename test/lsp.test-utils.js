@@ -203,7 +203,6 @@ export async function startServer({ files, settings = {}, initializationOptions 
   const projectDir = await createProject(files);
   const child = spawn(process.execPath, [wrapperPath, '--stdio'], {
     cwd: projectDir,
-    env: { ...process.env, KNIP_DISABLE_RAW_TRANSFER: '1' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   const client = createClient(child, settings);

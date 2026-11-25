@@ -3,6 +3,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+process.env.KNIP_DISABLE_RAW_TRANSFER ??= '1';
+
 const serverModuleUrl = new URL('./server.js', import.meta.resolve('@knip/language-server'));
 const { LanguageServer } = await import(serverModuleUrl);
 const requireFromServer = createRequire(serverModuleUrl);
