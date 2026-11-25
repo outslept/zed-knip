@@ -1,11 +1,3 @@
-> [!NOTE]
-> **Not published to the Zed extension marketplace yet.**
-> I'm holding off on submitting to the marketplace while I clean up and polish the code a bit more. In the meantime, you can install it as a **Dev Extension**:
->
-> 1. Clone this repository (`git clone https://github.com/outslept/zed-knip.git`)
-> 2. In Zed, open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **`zed: extensions`**
-> 3. Click **Install Dev Extension** in the top-right corner and select the cloned `zed-knip` folder*
- 
 # Knip Editor Extension for Zed
 
 Community [Zed](https://zed.dev) extension for [Knip](https://knip.dev): Find unused
