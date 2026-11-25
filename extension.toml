@@ -1,4 +1,4 @@
-id = "knip"
+id = "knip-lsp"
 name = "Knip"
 description = "Community Knip extension for Zed - find unused files, dependencies and exports in your JavaScript and TypeScript projects"
 version = "0.1.1"
