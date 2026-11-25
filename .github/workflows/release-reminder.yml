@@ -19,4 +19,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr comment "$PR_NUMBER" --body "Release PR merged. The release workflow is creating the GitHub Release and tag now; it may take a few minutes. Don't forget to update the submodule and \`extensions.toml\` version in \`zed-industries/extensions\` so this version reaches the Zed extension registry."
+        run: gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Release PR merged. The release workflow is creating the GitHub Release and tag now; it may take a few minutes. Don't forget to update the submodule and \`extensions.toml\` version in \`zed-industries/extensions\` so this version reaches the Zed extension registry."
