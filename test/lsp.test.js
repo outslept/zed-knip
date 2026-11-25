@@ -4,7 +4,7 @@ import { after, before, describe, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { startServer } from './lsp.test-utils.js';
 
-const packageJson = `${JSON.stringify({ name: 'fixture', private: true, type: 'module' }, null, 2)}\n`;
+const packageJson = `${JSON.stringify({ name: 'fixture', private: true, type: 'module', packageManager: 'pnpm@12.21.0' }, null, 2)}\n`;
 const knipJson = `${JSON.stringify({ entry: ['src/index.ts'], project: ['src/**/*.ts'] }, null, 2)}\n`;
 const lib = 'export const apple = 1;\nexport const pear = 2;\n';
 const index = "import { apple } from './lib.ts';\nconsole.log(apple);\n";
@@ -96,6 +96,16 @@ describe('knip language server', () => {
     });
     const labels = hints.flatMap(hint => hint.label);
     assert.ok(labels.some(label => label.value === '↻ 1 import'));
+  });
+
+  test('shows the install command instead of running it', async () => {
+    const message = main.client.waitForNotification('window/showMessage');
+    await main.client.request('workspace/executeCommand', {
+      command: 'knip.installDependency',
+      arguments: ['chalk', 'dependencies', main.projectDir],
+    });
+    const notification = await message;
+    assert.match(notification.message, /pnpm add chalk/);
   });
 
   test('pushes an inlay hint refresh after a module graph rebuild', async () => {

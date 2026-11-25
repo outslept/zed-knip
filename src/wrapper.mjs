@@ -1,11 +1,7 @@
-import { exec } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
-
-const execAsync = promisify(exec);
 
 const serverModuleUrl = new URL('./server.js', import.meta.resolve('@knip/language-server'));
 const { LanguageServer } = await import(serverModuleUrl);
@@ -14,7 +10,7 @@ const requireFromServer = createRequire(serverModuleUrl);
 const { SESSION_LOADING } = await import(new URL('./constants.js', serverModuleUrl));
 const { KNIP_CONFIG_LOCATIONS } = await import(pathToFileURL(requireFromServer.resolve('knip/session')));
 
-const { DidChangeWatchedFilesNotification } = requireFromServer('vscode-languageserver/node');
+const { DidChangeWatchedFilesNotification, MessageType } = requireFromServer('vscode-languageserver/node');
 const { TextDocument } = requireFromServer('vscode-languageserver-textdocument');
 
 const MAX_TOTAL_DEP_SNIPPETS = 30;
@@ -1246,8 +1242,19 @@ export class ZedKnipServer extends LanguageServer {
     return 'npm';
   }
 
+  /** @param {import('vscode-languageserver/node').CodeActionParams} params */
+  async handleCodeAction(params) {
+    const actions = await super.handleCodeAction(params);
+    for (const action of actions) {
+      if (action.command?.command === 'knip.installDependency') {
+        action.title = `Show command to ${action.title.replace(/^Install /, 'install ')}`;
+      }
+    }
+    return actions;
+  }
+
   /** @param {import('vscode-languageserver/node').ExecuteCommandParams} params */
-  async handleExecuteCommand(params) {
+  handleExecuteCommand(params) {
     if (params.command !== 'knip.installDependency') return;
     const [packageName, dependencyType, workspacePath] = params.arguments ?? [];
     if (typeof packageName !== 'string' || !PACKAGE_NAME_RE.test(packageName)) return;
@@ -1261,16 +1268,10 @@ export class ZedKnipServer extends LanguageServer {
       yarn: `yarn add ${packageName}${isDev ? ' -D' : ''}`,
       bun: `bun add ${packageName}${isDev ? ' -d' : ''}`,
     };
-    const cmd = commands[pm];
-    this.connection.console.log(`Installing dependency: ${cmd} (in ${workspacePath})`);
-
-    try {
-      await execAsync(cmd, { cwd: workspacePath });
-      this.connection.console.log(`Successfully installed ${packageName}`);
-      await this.restart();
-    } catch (error) {
-      this.connection.console.error(`Failed to install ${packageName}: ${error}`);
-    }
+    this.connection.sendNotification('window/showMessage', {
+      type: MessageType.Info,
+      message: `Run in ${workspacePath}:\n\n${commands[pm]}`,
+    });
   }
 }
 

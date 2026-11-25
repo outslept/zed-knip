@@ -34,7 +34,7 @@ check.
 - Diagnostics for unused files, dependencies, and exports
 - Hover on exports and `package.json` dependencies to see import locations
 - Hover on circular imports and contended exports (`ambiguous`, `shadowed`, `converged`)
-- Code actions to fix or ignore issues (including installing unlisted dependencies)
+- Code actions to fix or ignore issues, including the install command for unlisted dependencies
 - Inlay hints showing import counts (`↻ N imports`) for exports
 
 ## Screenshots & Contention
